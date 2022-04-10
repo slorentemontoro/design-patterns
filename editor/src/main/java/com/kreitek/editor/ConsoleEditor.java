@@ -1,6 +1,8 @@
 package com.kreitek.editor;
 
+import com.kreitek.editor.Memento.CareTaker;
 import com.kreitek.editor.commands.CommandFactory;
+import com.kreitek.editor.commands.UndoCommand;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -17,7 +19,10 @@ public class ConsoleEditor implements Editor {
     public static final String TEXT_WHITE = "\u001B[37m";
 
     private final CommandFactory commandFactory = new CommandFactory();
-    private ArrayList<String> documentLines = new ArrayList<String>();
+    private ArrayList<String> documentLines = new ArrayList<>();
+
+    private final UndoCommand undoCommand = new UndoCommand();
+    private final CareTaker commandCareTaker = CareTaker.getInstance();
 
     @Override
     public void run() {
@@ -26,7 +31,13 @@ public class ConsoleEditor implements Editor {
             String commandLine = waitForNewCommand();
             try {
                 Command command = commandFactory.getCommand(commandLine);
+
+                if(!command.getClass().getSimpleName().equals("UndoCommand")) {
+                    commandCareTaker.add(undoCommand.setState(documentLines));
+                }
+
                 command.execute(documentLines);
+
             } catch (BadCommandException e) {
                 printErrorToConsole("Bad command");
             } catch (ExitException e) {
@@ -36,6 +47,8 @@ public class ConsoleEditor implements Editor {
             showHelp();
         }
     }
+
+
 
     private void showDocumentLines(ArrayList<String> textLines) {
         if (textLines.size() > 0){
@@ -64,6 +77,7 @@ public class ConsoleEditor implements Editor {
         printLnToConsole("To add new line -> a \"your text\"");
         printLnToConsole("To update line  -> u [line number] \"your text\"");
         printLnToConsole("To delete line  -> d [line number]");
+        printLnToConsole("To restore -> undo");
     }
 
     private void printErrorToConsole(String message) {
@@ -83,5 +97,6 @@ public class ConsoleEditor implements Editor {
     private void printToConsole(String message) {
         System.out.print(message);
     }
+
 
 }
